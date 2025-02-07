@@ -1,41 +1,21 @@
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { Job } from "../model/index.js";
-
+import removeVietnameseAccents from "../utils/removeVietnameseAccents.js";
 class JobController {
   async searchJob(req, res) {
     try {
       const userId = req.userId;
-      let { jobName = "", status = "", sortBy, order } = req.query;
-      status = status.toUpperCase();
-      if (!["ASC", "DESC"].includes(order)) {
-        order = "DESC";
-      }
-      if (!["status", "createdAt"].includes(sortBy)) {
-        sortBy = "createdAt";
-      }
-      if (["PENDING", "ONGOING", "COMPLETED"].includes(status)) {
-        const jobs = await Job.findAndCountAll({
-          where: {
-            userId,
+      const { jobName = "" } = req.query;
 
-            jobName: { [Op.like]: `%${jobName}%` },
-            status,
-          },
-          order: [[sortBy || "createdAt", order || "DESC"]],
-        });
-
-        return res.status(200).json({
-          status: "success",
-          data: jobs,
-          message: "Tìm công việc thành công.",
-        });
-      }
       const jobs = await Job.findAndCountAll({
         where: {
           userId,
-          jobName: { [Op.like]: `%${jobName}%` },
+          jobName: {
+            [Op.like]: `%${removeVietnameseAccents(jobName) || ""}%`,
+          },
         },
-        order: [[sortBy || "createdAt", order || "DESC"]],
+        order: [["createdAt", "DESC"]],
+        raw: true,
       });
 
       return res.status(200).json({
@@ -68,9 +48,12 @@ class JobController {
   }
   async createJob(req, res) {
     try {
-      const { jobName, jobDescription } = req.body;
+      const { jobName, jobDescription, status } = req.body;
       const userId = req.userId;
-      const job = await Job.create({ jobName, jobDescription, userId });
+      // console.log(status);
+
+      if (!status) throw new Error("Vui lòng nhập trạng thái công việc.");
+      const job = await Job.create({ jobName, jobDescription, status, userId });
 
       return res.status(201).json({
         status: "success",
@@ -126,6 +109,58 @@ class JobController {
       return res
         .status(400)
         .json({ status: "error", message: error.message || "Lỗi" });
+    }
+  }
+  async sortJob(req, res) {
+    try {
+      const  { userId } = req;
+      let { sortBy = "DESC" } = req.query;
+      sortBy = sortBy.toUpperCase();;
+
+      if (["ASC", "DESC"].includes(sortBy)) {
+        const jobs = await Job.findAndCountAll({
+          order: [["createdAt", sortBy]],
+          where: {
+            userId,
+          }
+        });
+
+        return res.status(200).json({
+          status: "success",
+          data: jobs,
+          message: "Sắp xếp công việc thành công",
+        });
+      }
+      if (["PENDING", "ONGOING", "COMPLETED"].includes(sortBy)) {
+        const jobs = await Job.findAndCountAll({
+          where: {
+            status: sortBy,
+            userId,
+          },
+          order: [["createdAt", "DESC"]],
+        });
+
+        return res.status(200).json({
+          status: "success",
+          data: jobs,
+          message: "Sắp xếp công việc thành công",
+        });
+      }
+
+      return res.status(200).json({
+        status: "success",
+        message: "Tìm kiếm thành công",
+        data: [],
+      });
+      // if (!["status", "createdAt"].includes(sortBy)) {
+      //   sortBy = "createdAt";
+      // }
+    } catch (error) {
+      return {
+        status: "error",
+        message: error.message || "Lỗi",
+        data: [],
+      };
     }
   }
 }

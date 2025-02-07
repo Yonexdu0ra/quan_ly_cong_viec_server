@@ -6,7 +6,8 @@ const authentication = async (req, res, next) => {
     const access_token = req.headers.authorization.split(" ")[1];
     if (!access_token) throw new Error("Unauthorized");
     const decoded = decodeJWT(access_token);
-
+    // console.log(decoded, access_token);
+    
     if (!decoded.status) throw new Error(decoded.message);
     req.userId = decoded.data.userId;
     next();

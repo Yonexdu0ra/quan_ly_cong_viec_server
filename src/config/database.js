@@ -20,14 +20,18 @@ const sequelize = new Sequelize(
   process.env.DATABASE_PASSWORD,
   {
     host: process.env.DATABASE_HOST,
-    dialect: "postgres",
+    dialect: "mysql",
     port: process.env.DATABASE_PORT,
     logging: false,
     dialectOptions: {
       ssl: {
         ca: pathFileCA,
       },
+      // charset: "utf8",
+      charset: "utf8mb4_unicode_ci",
+      // collate: "utf8mb4_unicode_ci", // Chỉ định collation cho cơ sở dữ liệu
     },
+    timezone: "+07:00",
   }
 );
 

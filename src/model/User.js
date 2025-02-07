@@ -26,6 +26,16 @@ const User = sequelize.define(
         isEmail: true,
       },
     },
+    phone: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      defaultValue: null,
+    },
+    description: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      defaultValue: ""
+    }
   },
   {
     timestamps: true,

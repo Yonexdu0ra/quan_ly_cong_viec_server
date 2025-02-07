@@ -1,48 +1,45 @@
 import jwt from "jsonwebtoken";
 import { Account, User, sequelize } from "../model/index.js";
 import decodeJWT from "../utils/decodeJWT.js";
+import validate from "../utils/validate.js";
+import nodemailer from "nodemailer";
+
 class AuthenticationController {
   async register(req, res) {
     const transaction = await sequelize.transaction();
     try {
       let { username, password, fullname, email } = req.body;
-
-      if (!username) throw new Error("Vui lòng điền username");
-      if (!password) throw new Error("Vui lòng điền password");
-      if (!fullname) throw new Error("Vui lòng điền fullname");
-      if (!email) throw new Error("Vui lòng điền email");
-      if (password.length < 6)
-        throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
-      if (username.length < 5)
-        throw new Error("Tên đăng nhập phải có ít nhất 5 ký tự");
-      if (fullname.length < 5)
-        throw new Error("Tên đầy đủ phải có ít nhất 5 ký tự");
-      const isEmail = /\S+@\S+\.\S+/;
-      if (!isEmail.test(email)) throw new Error("Email không hợp lệ");
-
       username = username?.trim()?.toLowerCase();
+      fullname = fullname?.trim();
+      email = email?.trim()?.toLowerCase();
+      password = password?.trim();
+      if (!validate.username(username).status)
+        throw new Error(validate.username(username).message);
+      if (!validate.fullname(fullname).status)
+        throw new Error(validate.fullname(fullname).message);
+      if (!validate.email(email).status)
+        throw new Error(validate.email(email).message);
+      if (!validate.password(password).status)
+        throw new Error(validate.password(password).message);
 
       const user = await Account.findOne({
         where: { username },
       });
 
-      if (user) throw new Error("Tài khoản đã tồn tại");
+      if (user)
+        throw new Error("Tài khoản đã tồn tại, vui lòng chọn tài khoản khác.");
 
       const newUsers = await User.create({
         fullname,
         email,
-      }, {
-        raw: true
       });
-
-      // console.log(newUsers.toJSON());
 
       const newAccount = await Account.create({
         username,
         userId: newUsers.id,
         password,
       });
-      // console.log(newAccount.toJSON());
+
       await transaction.commit();
       return res.status(201).json({
         status: "success",
@@ -60,55 +57,55 @@ class AuthenticationController {
   async login(req, res) {
     try {
       let { username, password } = req.body;
-      if (!username)
-        return res
-          .status(400)
-          .json({ status: "error", message: "Vui lòng điền username" });
-      if (!password)
-        return res
-          .status(400)
-          .json({ status: "error", message: "Vui lòng điền password" });
+
       username = username?.trim()?.toLowerCase();
       password = password?.trim();
-
+      // if(!validate.username(username).status) throw new Error(validate.username(username).message)
+      // if(!validate.password(password).status) throw new Error(validate.password(password).message)
+      if (!username) throw new Error("Vui lòng nhập tên đăng nhập");
+      if (!password) throw new Error("Vui lòng nhập mật khẩu");
       const account = await Account.findOne({
         where: { username },
         include: User,
       });
 
-      if (!account)
-        return res
-          .status(404)
-          .json({ status: "error", message: "Tài khoản không tồn tại" });
+      if (!account) throw new Error("Tài khoản không tồn tại");
+
       if (account.isLocked)
-        return res
-          .status(403)
-          .json({ status: "error", message: "Tài khoản đã bị khóa" });
+        throw new Error(
+          "Tài khoản đã bị khóa không thể thực hiện chức năng này"
+        );
       if (account.password !== password)
-        return res
-          .status(401)
-          .json({ status: "error", message: "Mật khẩu không chính xác" });
-      if (account.username === username) {
-        const dataEncoded = {
-          userId: account.userId,
-        };
-        const access_token = jwt.sign(dataEncoded, process.env.SECRET_KEY, {
-          expiresIn: "1h",
-        });
-        const refresh_token = jwt.sign(dataEncoded, process.env.SECRET_KEY, {
-          expiresIn: "3d",
-        });
-        return res.status(200).json({
-          status: "success",
-          message: "Đăng nhập thành công",
-          data: { access_token, refresh_token, user: account.User },
-        });
-      }
+        throw new Error("Mật khẩu không chính xác");
+      if (account.username !== username)
+        throw new Error("Tên đăng nhập không chính xác");
+      const dataEncoded = {
+        userId: account.userId,
+      };
+      const access_token = jwt.sign(dataEncoded, process.env.SECRET_KEY, {
+        expiresIn: "1h",
+      });
+      const refresh_token = jwt.sign(dataEncoded, process.env.SECRET_KEY, {
+        expiresIn: "3d",
+      });
+      return res.status(200).json({
+        status: "success",
+        message: "Đăng nhập thành công",
+        data: {
+          access_token,
+          refresh_token,
+          user: {
+            ...account.toJSON().User,
+            username: account.toJSON().username,
+          },
+        },
+      });
     } catch (error) {
-      console.log(error);
-      return res
-        .status(400)
-        .json({ status: "error", message: "Không thể xác thực tài khoản" });
+      // console.log(error);
+      return res.status(400).json({
+        status: "error",
+        message: error.message || "Đăng nhập thất bại",
+      });
     }
   }
   async refresh_token(req, res) {
@@ -116,11 +113,15 @@ class AuthenticationController {
       const refresh_token = req.body.refresh_token;
       if (!refresh_token) throw new Error("Yêu cầu refresh token");
       const decoded = decodeJWT(refresh_token);
+      // console.log(decoded);
+
       if (!decoded.status) throw new Error(decoded.message);
 
       const account = await Account.findOne({
-        where: { username: decoded.data.username },
+        where: { userId: decoded.data.userId },
       });
+      // console.log(account);
+
       if (!account) throw new Error("Tài khoản không tồn tại");
 
       if (account.isLocked)
@@ -129,8 +130,6 @@ class AuthenticationController {
         );
 
       const dataEncoded = {
-        username: account.username,
-        role: account.role,
         userId: account.userId,
       };
       const access_token = jwt.sign(dataEncoded, process.env.SECRET_KEY, {
@@ -145,6 +144,54 @@ class AuthenticationController {
       return res.status(401).json({
         status: "error",
         message: error.message || "Unauthorized",
+        data: null,
+      });
+    }
+  }
+  async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+      console.log(email);
+      
+      if (!email) throw new Error("Vui lòng nhập email");
+      if (!validate.email(email).status)
+        throw new Error(validate.email(email).message);
+      const userData = await User.findOne({
+        where: { email },
+      });
+      if (!userData) throw new Error("Email không tồn tại");
+
+      const accountData = await Account.findOne({
+        where: { userId: userData.id },
+      });
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail", 
+        auth: {
+          user: process.env.EMAIL_USERNAME,
+          pass: process.env.EMAIL_PASSWORD, 
+        },
+      });
+      const mailOptions = {
+        // from: process.env.EMAIL_USERNAME,
+        to: [userData.email],
+        subject: "Cấp lại mật khẩu hệ thống quản lý công việc",
+        // text: "Mật khẩu của bạn đã được cấp lại",
+        html: `<p>Mật khẩu hiện tại của bạn là <strong>${accountData.password}</strong></p>`,
+      };
+      const data = await transporter.sendMail(mailOptions);
+      // console.log(data);
+      return res.status(200).json({
+        status: "success",
+        message: "Đã gửi mật khẩu tới email vui lòng truy cập email để xem.",
+        // data: { token },
+      });
+    } catch (error) {
+      console.log(error);
+      
+      return res.status(500).json({
+        status: "error",
+        message: error.message || "Internal Server Error",
         data: null,
       });
     }
