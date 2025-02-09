@@ -1,4 +1,4 @@
-import { Account, sequelize, User } from "../model/index.js";
+import { Account, User } from "../model/index.js";
 
 class UserController {
   async myInfo(req, res) {
@@ -7,12 +7,14 @@ class UserController {
       if (!userId) throw new Error("Nguoi dung khong ton tai.");
       const userData = await Account.findOne({
         include: User,
+        where: {
+          userId,
+        }
       });
 
       return res.status(200).json({
         status: "success",
         data: {
-          // id: userData.id,
           ...userData.User.dataValues,
           username: userData.username,
         },
