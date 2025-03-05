@@ -22,6 +22,10 @@ class Validate {
       if (username === "") throw new Error("Tên đăng nhập không được để trống");
       if (username.length < 5 || username.length > 25)
         throw new Error("Tên đăng nhập phải từ 5 đến 25 ký tự");
+      const regex = /^[a-zA-Z0-9]+$/;
+      if (!regex.test(username)) {
+        throw new Error("Tài khoản không được chứa ký tự đặc biệt");
+      }
       return {
         status: true,
         message: "",
@@ -54,7 +58,7 @@ class Validate {
     string = string.trim();
     try {
       if (string === "") throw new Error("Mật khẩu không được để trống");
-      if (string.length < 6 && string.length > 25)
+      if (string.length < 6 || string.length > 25)
         throw new Error("Mật khẩu phải từ 6 đến 25 ký tự");
       return {
         status: true,
@@ -133,7 +137,6 @@ class Validate {
       };
     }
   }
-  
 }
 
 export default new Validate();

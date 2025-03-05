@@ -9,6 +9,12 @@ class AuthenticationController {
     const transaction = await sequelize.transaction();
     try {
       let { username, password, fullname, email } = req.body;
+
+      if(!username) throw new Error("vui lòng điền usename")
+      if (!fullname) throw new Error("vui lòng điền fulname");
+      if(!email) throw new Error("vui lòng điền email");
+      if(!password) throw new Error("vui lòng điền password");
+
       username = username?.trim()?.toLowerCase();
       fullname = fullname?.trim();
       email = email?.trim()?.toLowerCase();
@@ -48,7 +54,7 @@ class AuthenticationController {
     } catch (error) {
       console.log(error);
       await transaction.rollback();
-      return res.status(400).json({
+      return res.status(500).json({
         status: "error",
         message: error.message || "Tạo tài khoản thất bại",
       });
@@ -152,7 +158,7 @@ class AuthenticationController {
     try {
       const { email } = req.body;
       console.log(email);
-      
+
       if (!email) throw new Error("Vui lòng nhập email");
       if (!validate.email(email).status)
         throw new Error(validate.email(email).message);
@@ -166,10 +172,10 @@ class AuthenticationController {
       });
 
       const transporter = nodemailer.createTransport({
-        service: "gmail", 
+        service: "gmail",
         auth: {
           user: process.env.EMAIL_USERNAME,
-          pass: process.env.EMAIL_PASSWORD, 
+          pass: process.env.EMAIL_PASSWORD,
         },
       });
       const mailOptions = {
@@ -188,7 +194,7 @@ class AuthenticationController {
       });
     } catch (error) {
       console.log(error);
-      
+
       return res.status(500).json({
         status: "error",
         message: error.message || "Internal Server Error",
