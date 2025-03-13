@@ -83,18 +83,27 @@ class ScheduleController {
 
       if (title.length > 255)
         throw new Error("Tiêu đề lịch trình không được vượt quá 255 ký tự.");
-      if (content.length > 500)
-        throw new Error("Nội dung lịch trình không được vượt quá 500 ký tự.");
+      if (content.length > 1000)
+        throw new Error("Nội dung lịch trình không được vượt quá 1000 ký tự.");
       const today = new Date();
-      today.setHours(0);
-      today.setMinutes(0);
-      today.setSeconds(0);
-      today.setMilliseconds(0);
-      const dateSchedule = new Date(date);
-      if (dateSchedule < today)
-        throw new Error("Ngày lịch trình không hợp lệ.");
-      if (!isValidTime(time))
-        throw new Error("Thời gian lịch trình không hợp lệ.");
+
+      // const isValid = isValidDate(date);
+      const scheduleDate = new Date()
+      const [hours, minutes] = time.split(":");
+      scheduleDate.setHours(hours, minutes, 59, 59);
+      if (scheduleDate < today) throw new Error("Thời gian thông báo không hợp lệ.");
+      const [year, month, day] = date.split("-");
+      scheduleDate.setFullYear(year,  -parseInt(month) - 1, day);
+
+      
+      if (scheduleDate < today) throw new Error("Ngày thông báo không hợp lệ.");
+      
+      
+      // const dateSchedule = new Date(date);
+      // if (dateSchedule < today)
+      //   throw new Error("Ngày lịch trình không hợp lệ.");
+      // if (!isValidTime(time))
+      //   throw new Error("Thời gian lịch trình không hợp lệ.");
 
       const schedule = await Schedule.create({
         title,
