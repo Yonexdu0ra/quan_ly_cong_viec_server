@@ -50,7 +50,7 @@ const job = new CronJob(
 
         const mailOptions = {
           to: [userData.email],
-          subject: schedule.title,
+          subject: "Thông báo từ hệ thống",
           text: schedule.content,
         };
         const data = await transporter.sendMail(mailOptions);

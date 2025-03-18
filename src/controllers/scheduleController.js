@@ -10,7 +10,7 @@ class ScheduleController {
       const listSchedule = await Schedule.findAndCountAll({
         where: {
           userId,
-          title: {
+          content: {
             [Op.like]: `%${removeVietnameseAccents(title)}%`,
           },
         },
@@ -75,25 +75,28 @@ class ScheduleController {
   async createSchedule(req, res) {
     try {
       const { userId } = req;
-      const { title, content, time, date } = req.body;
-      if (!title) throw new Error("Vui lòng nhập tiêu đề lịch trình.");
+      const {  content, time, date } = req.body;
+      // if (!title) throw new Error("Vui lòng nhập tiêu đề lịch trình.");
       if (!content) throw new Error("Vui lòng nội dung lịch trình.");
       if (!time) throw new Error("Vui lòng nhập thời gian lịch trình.");
       if (!date) throw new Error("Vui lòng nhập ngày lịch trình.");
 
-      if (title.length > 255)
-        throw new Error("Tiêu đề lịch trình không được vượt quá 255 ký tự.");
+      // if (title.length > 255)
+      //   throw new Error("Tiêu đề lịch trình không được vượt quá 255 ký tự.");
       if (content.length > 1000)
         throw new Error("Nội dung lịch trình không được vượt quá 1000 ký tự.");
       const today = new Date();
 
       // const isValid = isValidDate(date);
       const scheduleDate = new Date()
+      
       const [hours, minutes] = time.split(":");
+      if(!hours || !minutes) throw new Error("Thời gian thông báo không hợp lệ.");
       scheduleDate.setHours(hours, minutes, 59, 59);
       if (scheduleDate < today) throw new Error("Thời gian thông báo không hợp lệ.");
       const [year, month, day] = date.split("-");
-      scheduleDate.setFullYear(year,  -parseInt(month) - 1, day);
+      if (!year || !month || !day) throw new Error("Ngày thông báo không hợp lệ.");
+      scheduleDate.setFullYear(year,  parseInt(month) - 1, day);
 
       
       if (scheduleDate < today) throw new Error("Ngày thông báo không hợp lệ.");
@@ -106,7 +109,7 @@ class ScheduleController {
       //   throw new Error("Thời gian lịch trình không hợp lệ.");
 
       const schedule = await Schedule.create({
-        title,
+        title: content,
         content,
         time,
         date,
@@ -128,21 +131,24 @@ class ScheduleController {
       const { id } = req.params;
       const { userId } = req;
       const { title, content, time, date } = req.body;
-      if (!title) throw new Error("Vui lòng nhập tiêu đề lịch trình.");
+      // if (!title) throw new Error("Vui lòng nhập tiêu đề lịch trình.");
       if (!content) throw new Error("Vui lòng nội dung lịch trình.");
-      if (!time) throw new Error("Vui lòng nhập thời gian lịch trình.");
+      // if (!time) throw new Error("Vui lòng nhập thời gian lịch trình.");
       if (!date) throw new Error("Vui lòng nhập ngày lịch trình.");
 
-      if (title.length > 255)
-        throw new Error("Tiêu đề lịch trình không được vượt quá 255 ký tự.");
+      // if (title.length > 255)
+      //   throw new Error("Tiêu đề lịch trình không được vượt quá 255 ký tự.");
       if (content.length > 500)
         throw new Error("Nội dung lịch trình không được vượt quá 500 ký tự.");
       const today = new Date();
-      const dateSchedule = new Date(date);
-      if (dateSchedule < today)
-        throw new Error("Ngày lịch trình không hợp lệ.");
+      const [year, month, day] = date.split("-");
+      const dateSchedule = new Date();
+      dateSchedule.setFullYear(year, parseInt(month) - 1, day);
       if (!isValidTime(time))
         throw new Error("Thời gian lịch trình không hợp lệ.");
+      today.setHours(0, 0, 0, 0);
+      if (dateSchedule < today)
+        throw new Error("Ngày lịch trình không hợp lệ.");
 
       const schedule = await Schedule.findOne({ where: { id, userId } });
       if (!schedule)
@@ -150,7 +156,7 @@ class ScheduleController {
           .status(404)
           .json({ status: "error", message: "Không tìm thấy lịch trình" });
 
-      schedule.title = title;
+      schedule.title = content;
       schedule.content = content;
       schedule.time = time;
       schedule.date = date;
