@@ -63,7 +63,7 @@ class Validate {
       if (string.length > 25)
         throw new Error("password có độ dài tối đa 25 ký tự");
       if (string.length < 6)
-        throw new Error("password phải từ 6 đến 25 ký tự");
+        throw new Error("password phải có tối thiểu 6 ký tự");
       return {
         status: true,
         message: "",
