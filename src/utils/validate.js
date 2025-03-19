@@ -1,10 +1,33 @@
 class Validate {
   fullname(fullname) {
-    fullname = fullname.trim();
+    ;
     try {
-      if (fullname === "") throw new Error("Họ và tên không được để trống");
-      if (fullname.length < 5 || fullname.length > 25)
-        throw new Error("Họ và tên phải từ 5 đến 25 ký tự");
+      if (!fullname || fullname.trim() === "") throw new Error("Vui lòng nhập fullname");
+      if (fullname.length < 5 )
+        throw new Error("fullname phải có độ dài tối thiểu 5 ký tự");
+      if (fullname.length > 25) throw new Error("fullname có độ dài tối đa 25 ký tự");
+        return {
+          status: true,
+          message: "",
+        };
+    } catch (error) {
+      return {
+        status: false,
+        message: error.message,
+      };
+    }
+  }
+  username(username) {
+    
+    try {
+      if (!username || username.trim() === "") throw new Error("Vui lòng nhập username");
+      if(username.length > 25) throw new Error("username có độ dài tối đa 25 ký tự");
+      if (username.length < 5)
+        throw new Error("username phải có độ dài tối thiểu 5 ký tự");
+      const regex = /^[a-zA-Z0-9]+$/;
+      if (!regex.test(username)) {
+        throw new Error("username không được chứa ký tự đặc biệt");
+      }
       return {
         status: true,
         message: "",
@@ -16,33 +39,12 @@ class Validate {
       };
     }
   }
-  username(username) {
-    username = username.trim();
-    try {
-      if (username === "") throw new Error("Tên đăng nhập không được để trống");
-      if (username.length < 5 || username.length > 25)
-        throw new Error("Tên đăng nhập phải từ 5 đến 25 ký tự");
-      const regex = /^[a-zA-Z0-9]+$/;
-      if (!regex.test(username)) {
-        throw new Error("Tài khoản không được chứa ký tự đặc biệt");
-      }
-      return {
-        status: true,
-        message: "",
-      };
-    } catch (error) {
-      return {
-        status: false,
-        message: error.message || "Tên đăng nhập không hợp lệ",
-      };
-    }
-  }
   email(email) {
-    email = email.trim();
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     try {
-      if (email === "") throw new Error("Email không được để trống");
-      if (!emailRegex.test(email)) throw new Error("Email không hợp lệ");
+      if (!email || email.trim() === "")
+        throw new Error("Vui lòng nhập email");
+      if (!emailRegex.test(email)) throw new Error("email không hợp lệ");
       return {
         status: true,
         message: "",
@@ -55,11 +57,13 @@ class Validate {
     }
   }
   password(string) {
-    string = string.trim();
+    ;
     try {
-      if (string === "") throw new Error("Mật khẩu không được để trống");
-      if (string.length < 6 || string.length > 25)
-        throw new Error("Mật khẩu phải từ 6 đến 25 ký tự");
+      if (!string || string.trim() === "") throw new Error("Vui lòng nhập password");
+      if (string.length > 25)
+        throw new Error("password có độ dài tối đa 25 ký tự");
+      if (string.length < 6)
+        throw new Error("password phải từ 6 đến 25 ký tự");
       return {
         status: true,
         message: "",

@@ -10,15 +10,11 @@ class AuthenticationController {
     try {
       let { username, password, fullname, email } = req.body;
 
-      if(!username) throw new Error("vui lòng điền usename")
-      if (!fullname) throw new Error("vui lòng điền fulname");
-      if(!email) throw new Error("vui lòng điền email");
-      if(!password) throw new Error("vui lòng điền password");
+      // if(!username) throw new Error("Vui lòng điền usename")
+      // if (!fullname) throw new Error("Vui lòng điền fulname");
+      // if(!email) throw new Error("Vui lòng điền email");
+      // if(!password) throw new Error("Vui lòng điền password");
 
-      username = username?.trim()?.toLowerCase();
-      fullname = fullname?.trim();
-      email = email?.trim()?.toLowerCase();
-      password = password?.trim();
       if (!validate.username(username).status)
         throw new Error(validate.username(username).message);
       if (!validate.fullname(fullname).status)
@@ -27,13 +23,17 @@ class AuthenticationController {
         throw new Error(validate.email(email).message);
       if (!validate.password(password).status)
         throw new Error(validate.password(password).message);
+      username = username?.trim()?.toLowerCase();
+      email = email?.trim()?.toLowerCase();
+      fullname = fullname?.trim();
+      password = password?.trim();
 
       const user = await Account.findOne({
         where: { username },
       });
 
       if (user)
-        throw new Error("Tài khoản đã tồn tại, vui lòng chọn tài khoản khác.");
+        throw new Error("username đã tồn tại vui lòng sử dụng username khác");
 
       const newUsers = await User.create({
         fullname,
@@ -49,12 +49,12 @@ class AuthenticationController {
       await transaction.commit();
       return res.status(201).json({
         status: "success",
-        message: "Tạo tài khoản thành công",
+        message: "Đăng ký tài khoản thành công",
       });
     } catch (error) {
       console.log(error);
       await transaction.rollback();
-      return res.status(500).json({
+      return res.status(400).json({
         status: "error",
         message: error.message || "Tạo tài khoản thất bại",
       });
