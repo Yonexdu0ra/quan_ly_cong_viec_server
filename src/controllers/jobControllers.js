@@ -53,6 +53,13 @@ class JobController {
       // console.log(status);
 
       if (!status) throw new Error("Vui lòng nhập trạng thái công việc.");
+
+      if(!jobName || jobName?.length <1) throw new Error("Vui lòng nhập tên công việc.");
+      if(!jobDescription || jobDescription?.length <1) throw new Error("Vui lòng nhập mô tả công việc.");
+      if(!status) throw new Error("Vui lòng nhập trạng thái công việc.");
+
+      if(jobName?.length > 200) throw new Error("Tên công việc không được quá 200 ký tự.");
+      if(jobDescription?.length > 1000) throw new Error("Mô tả công việc không được quá 1000 ký tự.");
       const job = await Job.create({ jobName, jobDescription, status, userId });
 
       return res.status(201).json({
