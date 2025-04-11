@@ -32,8 +32,13 @@ class AuthenticationController {
         where: { username },
       });
 
-      if (user)
-        throw new Error("username đã tồn tại vui lòng sử dụng username khác");
+      if (user) {
+        return res.status(409).json({
+          status: "error",
+          message: "username đã tồn tại vui lòng sử dụng username khác",
+        });
+      }
+        // throw new Error("username đã tồn tại vui lòng sử dụng username khác");
 
       const newUsers = await User.create({
         fullname,
@@ -52,7 +57,7 @@ class AuthenticationController {
         message: "Đăng ký tài khoản thành công",
       });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       await transaction.rollback();
       return res.status(400).json({
         status: "error",
