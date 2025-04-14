@@ -40,25 +40,34 @@ class AuthenticationController {
       }
         // throw new Error("username đã tồn tại vui lòng sử dụng username khác");
 
-      const newUsers = await User.create({
-        fullname,
-        email,
-      });
+      const result = await sequelize.transaction(async (t) => {
+         const newUsers = await User.create(
+           {
+             fullname,
+             email,
+           },
+           { transaction: t }
+         );
 
-      const newAccount = await Account.create({
-        username,
-        userId: newUsers.id,
-        password,
-      });
+         const newAccount = await Account.create(
+           {
+             username,
+             userId: newUsers.id,
+             password,
+           },
+           { transaction: t }
+         );
+      })
+     
 
-      await transaction.commit();
+      // await transaction.commit();
       return res.status(201).json({
         status: "success",
         message: "Đăng ký tài khoản thành công",
       });
     } catch (error) {
       // console.log(error);
-      await transaction.rollback();
+      // await transaction.rollback();
       return res.status(400).json({
         status: "error",
         message: error.message || "Tạo tài khoản thất bại",
