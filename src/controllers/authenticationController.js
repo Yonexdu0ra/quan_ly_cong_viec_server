@@ -6,7 +6,7 @@ import nodemailer from "nodemailer";
 
 class AuthenticationController {
   async register(req, res) {
-    const transaction = await sequelize.transaction();
+    // const transaction = await sequelize.transaction();
     try {
       let { username, password, fullname, email } = req.body;
 
